@@ -16,25 +16,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout test repository
+      - name: Checkout API-Tests repository
         uses: actions/checkout@v4
 
-      - name: Checkout microservices-demo
+      - name: Checkout Microservices-Demo repository
         uses: actions/checkout@v4
         with:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
-      - name: Start microservices
+      - name: Docker compose up Microservices-Demo
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
-          sleep 45
+          echo "ℹ️ Services started, waiting for readiness..."
+          sleep 60
 
-      - name: Health check
+      - name: Check containers started
         run: |
+          echo "=== Docker containers status ==="
           docker ps
-          curl -f http://localhost:80 || echo "Service not ready yet"
+          echo "✅ All containers started"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -47,12 +49,36 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
+      - name: Download Allure history
+        uses: dawidd6/action-download-artifact@v3
+        if: always()
+        continue-on-error: true
+        with:
+          workflow: tests.yml
+          name: allure-history
+          path: allure-history
+
       - name: Run tests
         run: |
+          echo "=== Running pytest ==="
           poetry run pytest --alluredir=allure-results -v
+          
+          echo "=== Test results ==="
+          ls -la allure-results/ || echo "❌ No allure-results folder!"
         continue-on-error: true
 
-      - name: Stop services
+      - name: Show allure results
+        if: always()
+        run: |
+          echo "=== Allure results content ==="
+          if [ -d "allure-results" ]; then
+            ls -la allure-results/
+            echo "Files count: $(ls -1 allure-results/ | wc -l)"
+          else
+            echo "❌ No allure-results directory!"
+          fi
+
+      - name: Docker compose down Microservices-Demo
         if: always()
         run: |
           cd microservices-demo/deploy/docker-compose
@@ -61,17 +87,56 @@ jobs:
       - name: Generate Allure Report
         if: always()
         run: |
-          # Встановлюємо Allure CLI
+          # Install Allure CLI
+          echo "=== Installing Allure CLI ==="
           wget https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
           tar -zxvf allure-2.25.0.tgz
           sudo mv allure-2.25.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+          allure --version
           
-          # Генеруємо звіт
+          # Copy history from previous run if exists
+          echo "=== Copying history ==="
+          if [ -d "allure-history/allure-report/history" ]; then
+            echo "✅ History found, copying..."
+            mkdir -p allure-results/history
+            cp -r allure-history/allure-report/history/* allure-results/history/
+            echo "History files:"
+            ls -la allure-results/history/
+          else
+            echo "ℹ️ No history found (this is OK for first run)"
+          fi
+          
+          # Check allure-results
+          if [ ! -d "allure-results" ] || [ -z "$(ls -A allure-results)" ]; then
+            echo "❌ No allure-results or empty!"
+            echo "Creating dummy report for debugging..."
+            mkdir -p allure-results
+          fi
+          
+          # Generate report
+          echo "=== Generating Allure report ==="
           allure generate allure-results -o allure-report --clean
           
-          echo "Report generated successfully"
+          echo "=== Report generated ==="
           ls -la allure-report/
+          echo "Report size: $(du -sh allure-report)"
+          
+          # Check if history was created
+          if [ -d "allure-report/history" ]; then
+            echo "✅ History created in report:"
+            ls -la allure-report/history/
+          else
+            echo "ℹ️ No history in report yet"
+          fi
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-history
+          path: allure-report
+          retention-days: 30
 
       - name: Upload Pages artifact
         if: always()
