@@ -49,7 +49,7 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry run pytest tests/ --alluredir=allure-results -v
+          poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
 
       - name: Stop services
