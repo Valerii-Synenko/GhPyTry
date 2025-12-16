@@ -36,10 +36,7 @@ jobs:
         run: |
           echo "Checking if services are running..."
           docker ps
-          
-          # Wait for front-end to be ready
-          timeout 60 bash -c 'until curl -f http://localhost:80/health 2>/dev/null; do sleep 2; done' || true
-          
+          timeout 60 bash -c 'until curl -f http://localhost:80 2>/dev/null; do sleep 2; done' || true
           echo "Services are ready!"
 
       - name: Set up Python
@@ -61,15 +58,11 @@ jobs:
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-
-      - name: Install project
-        run: poetry install --no-interaction
+        run: poetry install --no-interaction --no-root  # ← виправлено!
 
       - name: Run tests with Allure
         run: |
-          poetry run pytest --alluredir=allure-results
+          poetry run pytest tests/ --alluredir=allure-results -v
         continue-on-error: true
 
       - name: Stop microservices
