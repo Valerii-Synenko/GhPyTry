@@ -50,7 +50,7 @@ jobs:
         id: cache-allure-history
         with:
           path: allure-history
-          key: allure-history-${{ github.run_number }}
+          key: allure-history-dummy  # не використовуємо для restore
           restore-keys: |
             allure-history-
 
@@ -73,32 +73,48 @@ jobs:
           sudo mv allure-2.25.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
           
-          # Copy history from cache if exists
+          # Check and copy history
+          echo "=== Checking for history ==="
+          ls -la allure-history/ || echo "No allure-history folder"
+          
           if [ -d "allure-history/history" ]; then
             echo "✅ History found in cache"
+            ls -la allure-history/history/
             mkdir -p allure-results/history
             cp -r allure-history/history/* allure-results/history/
+            echo "History copied to allure-results/history"
+            ls -la allure-results/history/
           else
-            echo "ℹ️ No history found (first run or cache expired)"
+            echo "ℹ️ No history found"
           fi
           
           # Generate report
+          echo "=== Generating report ==="
           allure generate allure-results -o allure-report --clean
           
-          # Prepare history for next run
-          mkdir -p allure-history
-          if [ -d "allure-report/history" ]; then
-            cp -r allure-report/history allure-history/
-          fi
+          echo "=== Report structure ==="
+          ls -la allure-report/
           
-          echo "✅ Report generated successfully"
+          # Save NEW history for next run
+          echo "=== Saving history for next run ==="
+          mkdir -p allure-history
+          
+          if [ -d "allure-report/history" ]; then
+            echo "✅ New history found in report"
+            ls -la allure-report/history/
+            cp -r allure-report/history allure-history/
+            echo "✅ History saved"
+            ls -la allure-history/
+          else
+            echo "⚠️ No history folder in generated report"
+          fi
 
       - name: Save Allure history to cache
         if: always()
         uses: actions/cache/save@v3
         with:
           path: allure-history
-          key: allure-history-${{ github.run_number }}
+          key: allure-history-${{ github.sha }}-${{ github.run_number }}
 
       - name: Upload Pages artifact
         if: always()
