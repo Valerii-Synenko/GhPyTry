@@ -1,8 +1,20 @@
-# Allure Test Report
+# 📊 Allure Test Report
 
-**Generated**: Wed Dec 17 23:45:30 UTC 2025
-**Run**: #15
-**Commit**: 3bae1c0d5cadc7f33d8ac460090fb755115d1ed4
-**Branch**: main
+**Generated**: 2025-12-17 23:58:05 UTC
+**Run Number**: #16
+**Commit**: `869d40d0bf785ba1f704bc8ca2bfca237a9a7d2b`
+**Branch**: `main`
+**Triggered by**: Valerii-Synenko
 
-[View in GitHub Actions](https://github.com/Valerii-Synenko/GhPyTry/actions/runs/20320800860)
+---
+
+[📋 View Workflow Run](https://github.com/Valerii-Synenko/GhPyTry/actions/runs/20321065052)
+
+## 📈 Navigate Report
+
+- **Overview** - Summary of test results
+- **Suites** - Tests organized by test suites
+- **Graphs** - Trends and statistics
+- **Timeline** - Test execution timeline
+- **Behaviors** - Tests by features/stories
+- **Packages** - Tests by package structure
