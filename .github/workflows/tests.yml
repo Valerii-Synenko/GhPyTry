@@ -1,19 +1,81 @@
-name: Run Tests with Allure Report
+name: 🧪 Tests & 📊 Allure Report
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
 jobs:
-  test:
+  setup-environment:
+    name: 🐳 Setup Test Environment
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout microservices-demo
+        uses: actions/checkout@v4
+        with:
+          repository: Valerii-Synenko/microservices-demo
+          path: microservices-demo
+
+      - name: Start Docker services
+        run: |
+          cd microservices-demo/deploy/docker-compose
+          docker compose up -d
+          
+          echo "Waiting for services to start..."
+          sleep 60
+
+      - name: Verify services are running
+        run: |
+          docker ps
+          
+          CONTAINER_COUNT=$(docker ps -q | wc -l)
+          if [ "$CONTAINER_COUNT" -gt 0 ]; then
+            echo "✅ $CONTAINER_COUNT containers running"
+          else
+            echo "❌ No containers running"
+            exit 1
+          fi
+
+      - name: Health check
+        run: |
+          echo "Checking front-end endpoint..."
+          
+          for i in {1..15}; do
+            if curl -f http://localhost:80 2>/dev/null; then
+              echo "✅ Front-end is ready!"
+              exit 0
+            fi
+            echo "Attempt $i: waiting..."
+            sleep 2
+          done
+          
+          echo "⚠️ Front-end not responding, but continuing..."
+
+      - name: Save Docker state
+        run: |
+          # Зберігаємо інформацію про запущені сервіси
+          docker ps > docker-status.txt
+          docker compose -f microservices-demo/deploy/docker-compose/docker-compose.yml ps >> docker-status.txt
+
+      - name: Upload Docker state
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-state
+          path: docker-status.txt
+          retention-days: 1
+
+  run-tests:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    needs: setup-environment
 
     steps:
       - name: Checkout test repository
@@ -25,14 +87,12 @@ jobs:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
-      - name: Start microservices
+      - name: Start Docker services (from previous job)
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
-          sleep 60
-
-      - name: Health check
-        run: docker ps
+          sleep 45
+          docker ps
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,101 +101,124 @@ jobs:
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
 
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Load Allure history from cache
-        uses: actions/cache/restore@v3
-        id: cache-allure-history
-        with:
-          path: allure-history
-          key: allure-history-dummy  # не використовуємо для restore
-          restore-keys: |
-            allure-history-
-
-      - name: Run tests
-        run: poetry run pytest --alluredir=allure-results -v
+      - name: Run pytest with Allure
+        run: |
+          poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
 
-      - name: Stop services
+      - name: Display test summary
+        if: always()
+        run: |
+          echo "=== Test Results Summary ==="
+          if [ -d "allure-results" ]; then
+            echo "Results generated successfully"
+            ls -la allure-results/
+          else
+            echo "⚠️ No test results found"
+          fi
+
+      - name: Stop Docker services
         if: always()
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose down -v
 
-      - name: Generate Allure Report with history
+      - name: Upload test results
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+          retention-days: 1
+
+  generate-report:
+    name: 📊 Generate & Publish Report
+    runs-on: ubuntu-latest
+    needs: run-tests
+    if: always()
+
+    steps:
+      - name: Checkout test repository
+        uses: actions/checkout@v4
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
+
+      - name: Checkout gh-pages for history
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Install Allure CLI
         run: |
-          # Install Allure CLI
+          echo "Installing Allure..."
           wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
           tar -zxf allure-2.25.0.tgz
           sudo mv allure-2.25.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
           
-          # Check and copy history
-          echo "=== Checking for history ==="
-          ls -la allure-history/ || echo "No allure-history folder"
-          
-          if [ -d "allure-history/history" ]; then
-            echo "✅ History found in cache"
-            ls -la allure-history/history/
+          allure --version
+
+      - name: Restore history
+        run: |
+          if [ -d "gh-pages/history" ]; then
+            echo "✅ History found from previous runs"
             mkdir -p allure-results/history
-            cp -r allure-history/history/* allure-results/history/
-            echo "History copied to allure-results/history"
+            cp -r gh-pages/history/* allure-results/history/
             ls -la allure-results/history/
           else
-            echo "ℹ️ No history found"
+            echo "ℹ️ No history found (first run)"
           fi
-          
-          # Generate report
-          echo "=== Generating report ==="
+
+      - name: Generate Allure Report
+        run: |
+          echo "Generating report..."
           allure generate allure-results -o allure-report --clean
           
-          echo "=== Report structure ==="
+          echo "=== Report Generated ==="
           ls -la allure-report/
           
-          # Save NEW history for next run
-          echo "=== Saving history for next run ==="
-          mkdir -p allure-history
-          
           if [ -d "allure-report/history" ]; then
-            echo "✅ New history found in report"
+            echo "✅ History included in report"
             ls -la allure-report/history/
-            cp -r allure-report/history allure-history/
-            echo "✅ History saved"
-            ls -la allure-history/
-          else
-            echo "⚠️ No history folder in generated report"
           fi
 
-      - name: Save Allure history to cache
-        if: always()
-        uses: actions/cache/save@v3
+      - name: Add report metadata
+        run: |
+          cat > allure-report/README.md << EOF
+          # Allure Test Report
+          
+          **Generated**: $(date)
+          **Run**: #${{ github.run_number }}
+          **Commit**: ${{ github.sha }}
+          **Branch**: ${{ github.ref_name }}
+          
+          [View in GitHub Actions](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOF
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          path: allure-history
-          key: allure-history-${{ github.sha }}-${{ github.run_number }}
-
-      - name: Upload Pages artifact
-        if: always()
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: allure-report
-
-  deploy:
-    needs: test
-    if: always()
-    runs-on: ubuntu-latest
-
-    permissions:
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
+          keep_files: false
+          commit_message: "📊 Update Allure Report - Run #${{ github.run_number }}"
