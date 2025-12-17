@@ -37,7 +37,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -45,14 +45,14 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Download Allure history
-        uses: dawidd6/action-download-artifact@v3
-        if: always()
-        continue-on-error: true
+      - name: Load Allure history from cache
+        uses: actions/cache/restore@v3
+        id: cache-allure-history
         with:
-          workflow: tests.yml
-          name: allure-history
           path: allure-history
+          key: allure-history-${{ github.run_number }}
+          restore-keys: |
+            allure-history-
 
       - name: Run tests
         run: poetry run pytest --alluredir=allure-results -v
@@ -73,31 +73,32 @@ jobs:
           sudo mv allure-2.25.0 /opt/allure
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
           
-          # Copy history from previous run if exists
-          if [ -d "allure-history/allure-report/history" ]; then
-            echo "✅ History found, copying..."
+          # Copy history from cache if exists
+          if [ -d "allure-history/history" ]; then
+            echo "✅ History found in cache"
             mkdir -p allure-results/history
-            cp -r allure-history/allure-report/history/* allure-results/history/
+            cp -r allure-history/history/* allure-results/history/
           else
-            echo "ℹ️ No history found"
+            echo "ℹ️ No history found (first run or cache expired)"
           fi
           
           # Generate report
           allure generate allure-results -o allure-report --clean
           
-          echo "Report generated successfully"
-          ls -la allure-report/
+          # Prepare history for next run
+          mkdir -p allure-history
+          if [ -d "allure-report/history" ]; then
+            cp -r allure-report/history allure-history/
+          fi
+          
+          echo "✅ Report generated successfully"
 
-      - name: Save Allure history
+      - name: Save Allure history to cache
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/cache/save@v3
         with:
-          name: allure-history
-          path: |
-            allure-report/history
-            allure-report/widgets
-          retention-days: 30
-          if-no-files-found: warn
+          path: allure-history
+          key: allure-history-${{ github.run_number }}
 
       - name: Upload Pages artifact
         if: always()
