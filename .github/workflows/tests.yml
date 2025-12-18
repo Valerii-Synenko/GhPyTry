@@ -25,7 +25,7 @@ jobs:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
-      - name: Start Docker services
+      - name: Docker compose up microservices-demo
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
@@ -33,7 +33,7 @@ jobs:
           echo "Waiting for services to start..."
           sleep 60
 
-      - name: Verify Docker containers
+      - name: Verify Docker containers up and running
         run: |
           CONTAINER_COUNT=$(docker ps -q | wc -l)
           if [ "$CONTAINER_COUNT" -gt 0 ]; then
@@ -55,7 +55,7 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Cache dependencies
+      - name: Cache Poetry dependencies
         uses: actions/cache@v3
         with:
           path: .venv
@@ -76,7 +76,7 @@ jobs:
           poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
 
-      - name: Stop Docker services
+      - name: Docker compose down microservices-demo
         if: always()
         run: |
           cd microservices-demo/deploy/docker-compose
@@ -92,7 +92,7 @@ jobs:
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
           allure --version
 
-      - name: Generate Allure Report with history
+      - name: Generate Allure Report (with history)
         if: always()
         run: |
           # Restore history
@@ -116,7 +116,7 @@ jobs:
             ls -la allure-report/history/
           fi
 
-      - name: Add report metadata
+      - name: Add metadata to report
         if: always()
         run: |
           cat > allure-report/README.md << EOF
@@ -142,7 +142,7 @@ jobs:
           - **Packages** - Tests by package structure
           EOF
 
-      - name: Publish to GitHub Pages
+      - name: Publish report to GitHub Pages
         if: always()
         uses: peaceiris/actions-gh-pages@v3
         with:
