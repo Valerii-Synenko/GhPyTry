@@ -1,9 +1,5 @@
 name: Tests
 
-run-name: >
-  ${{ github.ref_name }}
-  (Allure Report)
-
 on:
   push:
     branches: [ main ]
@@ -20,10 +16,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout test repository
+      - name: Checkout test-framework repository
         uses: actions/checkout@v4
 
-      - name: Checkout microservices-demo
+      - name: Checkout microservices-demo repository
         uses: actions/checkout@v4
         with:
           repository: Valerii-Synenko/microservices-demo
@@ -68,7 +64,7 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Checkout gh-pages for history
+      - name: Checkout gh-pages branch to get Allure reports history
         uses: actions/checkout@v4
         continue-on-error: true
         with:
@@ -99,7 +95,9 @@ jobs:
       - name: Generate Allure Report (with history)
         if: always()
         run: |
+          ##################
           # Restore history
+          ##################
           if [ -d "gh-pages/history" ]; then
             echo "✅ History found from previous runs"
             mkdir -p allure-results/history
@@ -108,13 +106,17 @@ jobs:
             echo "ℹ️ No history found (first run)"
           fi
           
+          ##################
           # Generate report
+          ##################
           echo "📊 Generating Allure report..."
           allure generate allure-results -o allure-report --clean
           
           echo "✅ Report generated successfully"
           
+          ###########################
           # Verify history in report
+          ###########################
           if [ -d "allure-report/history" ]; then
             echo "✅ History included in report"
             ls -la allure-report/history/
