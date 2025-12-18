@@ -1,14 +1,14 @@
 # 📊 Allure Test Report
 
-**Generated**: 2025-12-17 23:58:05 UTC
-**Run Number**: #16
-**Commit**: `869d40d0bf785ba1f704bc8ca2bfca237a9a7d2b`
+**Generated**: 2025-12-18 00:07:29 UTC
+**Run Number**: #17
+**Commit**: `4e5d5cbbf5134d06e95f31271c41402aefa58e83`
 **Branch**: `main`
 **Triggered by**: Valerii-Synenko
 
 ---
 
-[📋 View Workflow Run](https://github.com/Valerii-Synenko/GhPyTry/actions/runs/20321065052)
+[📋 View Workflow Run](https://github.com/Valerii-Synenko/GhPyTry/actions/runs/20321239817)
 
 ## 📈 Navigate Report
 
