@@ -1,1 +1,1 @@
-[{"values":[""],"name":"BASE_URL"},{"values":[""],"name":"TIMEOUT"},{"values":["3.13"],"name":"Python"},{"values":["ubuntu-latest"],"name":"OS"}]
+[{"values":["test"],"name":"ENV"},{"values":["localhost"],"name":"BASE_URL"},{"values":["60"],"name":"TIMEOUT"},{"values":["3.13"],"name":"Python"},{"values":["ubuntu-latest"],"name":"OS"},{"values":["true"],"name":"CI"},{"values":["main"],"name":"GIT_BRANCH"},{"values":["c66513da1fefff5c3e23db6a71d3b3d738222e88"],"name":"GIT_COMMIT"},{"values":["27"],"name":"GIT_RUN_NUMBER"}]
