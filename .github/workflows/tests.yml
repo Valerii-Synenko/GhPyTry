@@ -1,5 +1,9 @@
 name: Tests
 
+run-name: >
+  ${{ github.ref_name }}
+  (Allure Report)
+
 on:
   push:
     branches: [ main ]
@@ -151,3 +155,9 @@ jobs:
           publish_dir: allure-report
           keep_files: false
           commit_message: "📊 Allure Report - Run #${{ github.run_number }} - ${{ github.sha }}"
+
+      - name: Add report link
+        if: always()
+        run: |
+          echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
+          echo "https://<username>.github.io/<repo>/" >> $GITHUB_STEP_SUMMARY
