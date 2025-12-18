@@ -12,10 +12,13 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests with Allure TestOps
+    name: Run tests and upload to Allure TestOps
     runs-on: ubuntu-latest
 
     steps:
+      # =============================
+      # Checkout repositories
+      # =============================
       - name: Checkout test repository
         uses: actions/checkout@v4
 
@@ -25,16 +28,22 @@ jobs:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
+      # =============================
+      # Start microservices
+      # =============================
       - name: Docker compose up microservices-demo
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
-          echo "Waiting for services..."
+          echo "⏳ Waiting for services to start..."
           sleep 60
 
       - name: Verify Docker containers
         run: docker ps
 
+      # =============================
+      # Python & Poetry
+      # =============================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -55,35 +64,48 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
-      - name: Run pytest and upload results to Allure TestOps
-        env:
-          ALLURE_ENDPOINT: ${{ secrets.ALLURE_ENDPOINT }}
-          ALLURE_TOKEN: ${{ secrets.ALLURE_TOKEN }}
-          ALLURE_PROJECT_ID: ${{ secrets.ALLURE_PROJECT_ID }}
+      # =============================
+      # Run tests
+      # =============================
+      - name: Run pytest (generate allure-results)
         run: |
           poetry run pytest \
             --alluredir=allure-results \
             --clean-alluredir \
             -v
 
+      # =============================
+      # Upload to Allure TestOps
+      # =============================
       - name: Upload results to Allure TestOps
         if: always()
+        env:
+          ALLURE_ENDPOINT: ${{ secrets.ALLURE_ENDPOINT }}
+          ALLURE_TOKEN: ${{ secrets.ALLURE_TOKEN }}
+          ALLURE_PROJECT_ID: ${{ secrets.ALLURE_PROJECT_ID }}
         run: |
+          echo "🔎 Debug Allure variables"
+          echo "ALLURE_ENDPOINT=$ALLURE_ENDPOINT"
+          echo "ALLURE_PROJECT_ID=$ALLURE_PROJECT_ID"
+          echo "ALLURE_TOKEN length=${#ALLURE_TOKEN}"
+
           curl -fsSL https://github.com/allure-framework/allurectl/releases/latest/download/allurectl_linux_amd64 \
             -o allurectl
           chmod +x allurectl
 
           ./allurectl upload allure-results \
-            --endpoint $ALLURE_ENDPOINT \
-            --token $ALLURE_TOKEN \
-            --project-id $ALLURE_PROJECT_ID \
+            --endpoint "$ALLURE_ENDPOINT" \
+            --token "$ALLURE_TOKEN" \
+            --project-id "$ALLURE_PROJECT_ID" \
             --launch-name "GitHub Actions #${{ github.run_number }}" \
-            --launch-tags "github,ci,pytest" \
-            --launch-attributes \
-              branch=${{ github.ref_name }} \
-              commit=${{ github.sha }} \
-              actor=${{ github.actor }}
+            --launch-tags github,ci,pytest \
+            --job-run-branch "${{ github.ref_name }}" \
+            --job-run-name "${{ github.run_number }}" \
+            --job-run-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
+      # =============================
+      # Cleanup
+      # =============================
       - name: Docker compose down
         if: always()
         run: |
