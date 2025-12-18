@@ -110,10 +110,15 @@ jobs:
         if: always()
         run: |
           cat > allure-results/environment.properties << EOF
-          BASE_URL=${BASE_URL}
-          TIMEOUT=${TIMEOUT}
-          Python=${{ matrix.python || '3.13' }}
+          ENV=test
+          BASE_URL=localhost
+          TIMEOUT=60
+          Python=3.13
           OS=ubuntu-latest
+          CI=true
+          GIT_BRANCH=${{ github.ref_name }}
+          GIT_COMMIT=${{ github.sha }}
+          GIT_RUN_NUMBER=${{ github.run_number }}
           EOF
 
       - name: Generate Allure Report (with history)
