@@ -30,7 +30,18 @@ jobs:
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
-          sleep 60
+
+      - name: Wait for services to be ready
+        run: |
+          # Wait until BASE_URL return status code 200
+          echo "Waiting for API to respond..."
+          timeout 120s bash -c '
+          until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)" == "200" ]; do
+            echo "Still waiting for http://localhost/ to return 200 OK..."
+            sleep 5
+          done'
+          echo "✅ Services are up and running! Current status:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
