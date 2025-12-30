@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-run-name: "🧪 #${{ github.run_number }} - ${{ github.event.head_commit.message }}"
+run-name: "🧪:•. #${{ github.run_number }} - ${{ github.event.head_commit.message }}"
 
 permissions:
   contents: write
@@ -33,8 +33,7 @@ jobs:
 
       - name: Wait for services to be ready
         run: |
-          # Wait until BASE_URL return status code 200
-          echo "Waiting for API to respond..."
+          echo "Waiting for BASE_URL to respond..."
           timeout 120s bash -c '
           until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)" == "200" ]; do
             echo "Still waiting for http://localhost/ to return 200 OK..."
