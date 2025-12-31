@@ -1,4 +1,4 @@
-name: Tests
+name: API Tests
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-run-name: "🚀 Test run #${{ github.run_number }} - ${{ github.event.head_commit.message }}"
+run-name: "🚀 (test run #${{ github.run_number }}) ${{ github.event.head_commit.message }}"
 
 permissions:
   contents: write
@@ -16,6 +16,10 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    env:
+      BASE_URL: http://localhost/
+      FAKER_LOCALE: hr_HR
+
     steps:
       - name: Checkout test-framework
         uses: actions/checkout@v4
@@ -39,7 +43,7 @@ jobs:
             echo "Still waiting for http://localhost/ to return 200 OK..."
             sleep 5
           done'
-          echo "✅ Services are up and running! Current status:"
+          echo "🟢 Services are up and running! Current status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
       - name: Set up Python
@@ -71,7 +75,7 @@ jobs:
           retention-days: 1
 
   report:
-    name: Generate & Publish Report
+    name: Generate & Publish Test Report
     needs: test
     runs-on: ubuntu-latest
     if: always()
@@ -106,8 +110,31 @@ jobs:
             mkdir -p allure-results/history
             cp -r gh-pages-dir/history/* allure-results/history/
           fi
-          
+
           allure generate allure-results -o allure-report --clean
+
+      - name: Add Allure executor info
+        if: always()
+        run: |
+          cat > allure-results/executor.json << EOF
+          {
+            "name": "GitHub Actions",
+            "type": "github",
+            "buildUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+          }
+          EOF
+
+      - name: Add Allure metadata
+        if: always()
+        run: |
+          cat > allure-results/environment.properties << EOF
+          env=GitHub CI
+          base_url=http://localhost/
+          os=ubuntu-latest
+          git_branch=${{ github.ref_name }}
+          git_commit=${{ github.event.head_commit.message }}
+          git_run_number=${{ github.run_number }}
+          EOF
 
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
