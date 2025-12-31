@@ -41,7 +41,7 @@ jobs:
           timeout 120s bash -c '
           until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)" == "200" ]; do
             echo "Still waiting for http://localhost/ to return 200 OK..."
-            sleep 30
+            sleep 60
           done'
           echo "🟢 Services are up and running! Current status:"
           docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
