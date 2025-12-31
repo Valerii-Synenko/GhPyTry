@@ -57,6 +57,9 @@ jobs:
             docker logs edge-router --tail=50
             exit 1
           fi
+          
+          echo "⏳ Stabilizing services (30s)..."
+          sleep 30
 
       - name: Set up Python
         uses: actions/setup-python@v5
