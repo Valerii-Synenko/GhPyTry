@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-run-name: "🚀 #${{ github.run_number }} | ${{ github.event.head_commit.message }}"
+run-name: "🚀 (test run #${{ github.run_number }}) ${{ github.event.head_commit.message }}"
 
 permissions:
   contents: write
@@ -17,7 +17,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     env:
-      BASE_URL: http://localhost:8000
+      BASE_URL: http://localhost/8000
       FAKER_LOCALE: hr_HR
 
     steps:
@@ -34,11 +34,17 @@ jobs:
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
-          echo "Waiting 60s for services..."
-          sleep 60
 
-      - name: Verify Docker status
-        run: docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+      - name: Wait for services to be ready
+        run: |
+          echo "Waiting for BASE_URL to respond..."
+          timeout 120s bash -c '
+          until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/8000)" == "200" ]; do
+            echo "Still waiting for http://localhost/8000 to return 200 OK..."
+            sleep 5
+          done'
+          echo "🟢 Services are up and running! Current status:"
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -69,67 +75,76 @@ jobs:
           retention-days: 1
 
   report:
-      name: Generate & Publish Report
-      needs: test
-      runs-on: ubuntu-latest
-      if: always()
-      steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
+    name: Generate & Publish Test Report
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-        - name: Download Results
-          uses: actions/download-artifact@v4
-          with:
-            name: allure-results
-            path: allure-results
+      - name: Download Allure Results
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
 
-        - name: Checkout gh-pages
-          uses: actions/checkout@v4
-          continue-on-error: true
-          with:
-            ref: gh-pages
-            path: gh-pages-dir
+      - name: Checkout gh-pages (History)
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: gh-pages
+          path: gh-pages-dir
 
-        - name: Install Allure CLI
-          run: |
-            wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
-            tar -zxf allure-2.25.0.tgz
-            sudo mv allure-2.25.0 /opt/allure
-            sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+      - name: Install Allure CLI
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.25.0/allure-2.25.0.tgz
+          tar -zxf allure-2.25.0.tgz
+          sudo mv allure-2.25.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
 
-        - name: Add Allure Environment & Executor Info
-          run: |
-            cat > allure-results/environment.properties << EOF
-            Environment=GitHub CI
-            Base_URL=http://localhost:8000
-            Faker_Locale=hr_HR
-            OS=ubuntu-latest
-            Branch=${{ github.ref_name }}
-            EOF
-  
-            cat > allure-results/executor.json << EOF
-            {
-              "name": "GitHub Actions",
-              "type": "github",
-              "buildOrder": "${{ github.run_number }}",
-              "buildName": "Run #${{ github.run_number }}",
-              "buildUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "reportUrl": "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
-            }
-            EOF
+      - name: Generate Report with History
+        run: |
+          # Copy test history from the previous run
+          if [ -d "gh-pages-dir/history" ]; then
+            mkdir -p allure-results/history
+            cp -r gh-pages-dir/history/* allure-results/history/
+          fi
 
-        - name: Generate Allure Report
-          run: |
-            if [ -d "gh-pages-dir/history" ]; then
-              mkdir -p allure-results/history
-              cp -r gh-pages-dir/history/* allure-results/history/
-            fi
-            allure generate allure-results -o allure-report --clean
+          allure generate allure-results -o allure-report --clean
 
-        - name: Publish to GitHub Pages
-          uses: peaceiris/actions-gh-pages@v3
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_branch: gh-pages
-            publish_dir: allure-report
-            keep_files: falsetps://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
+      - name: Add Allure executor info
+        if: always()
+        run: |
+          cat > allure-results/executor.json << EOF
+          {
+            "name": "GitHub Actions",
+            "type": "github",
+            "buildUrl": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+          }
+          EOF
+
+      - name: Add Allure metadata
+        if: always()
+        run: |
+          cat > allure-results/environment.properties << EOF
+          env=GitHub CI
+          base_url=http://localhost/8000
+          os=ubuntu-latest
+          git_branch=${{ github.ref_name }}
+          git_commit=${{ github.event.head_commit.message }}
+          git_run_number=${{ github.run_number }}
+          EOF
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
+          keep_files: false
+
+      - name: Summary Link
+        run: |
+          echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
