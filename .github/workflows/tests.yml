@@ -21,16 +21,16 @@ jobs:
       FAKER_LOCALE: hr_HR
 
     steps:
-      - name: Checkout test-framework repository
+      - name: Checkout test-framework
         uses: actions/checkout@v4
 
-      - name: Checkout microservices-demo repository
+      - name: Checkout microservices-demo
         uses: actions/checkout@v4
         with:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
-      - name: Start and verify microservices
+      - name: Set up Environment
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
@@ -54,7 +54,7 @@ jobs:
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
       
             if [ "$STATUS" = "200" ]; then
-              echo "✅ edge-router is ready!"
+              echo "🟢edge-router is ready!"
               break
             fi
       
@@ -63,7 +63,7 @@ jobs:
           done
       
           if [ "$STATUS" != "200" ]; then
-            echo "❌ edge-router did not become ready"
+            echo "🔴edge-router did not become ready"
             echo ""
             echo "Container status:"
             docker ps
@@ -77,33 +77,7 @@ jobs:
           sleep 30
           echo "✅ All services ready!"
 
-      - name: Wait for services to be ready
-        run: |
-          echo "Waiting for edge-router..."
-
-          for i in {1..30}; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
-
-            if [ "$STATUS" = "200" ]; then
-              echo "🟢 edge-router is ready!"
-              break
-            fi
-
-            echo "Attempt $i/30: edge-router not ready (status=$STATUS)"
-            sleep 5
-          done
-
-          if [ "$STATUS" != "200" ]; then
-            echo "🔴 edge-router did not become ready"
-            docker ps
-            docker logs edge-router --tail=50
-            exit 1
-          fi
-
-          echo "⏳ Stabilizing services (30s)..."
-          sleep 30
-
-      - name: Set up Python
+      - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
@@ -128,7 +102,7 @@ jobs:
           poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
 
-      - name: Docker compose down microservices-demo
+      - name: Tear down Environment
         if: always()
         run: |
           cd microservices-demo/deploy/docker-compose
