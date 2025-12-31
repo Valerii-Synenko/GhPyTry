@@ -1,1 +1,1 @@
-[{"values":["GitHub CI"],"name":"env"},{"values":["http://localhost/"],"name":"base_url"},{"values":["ubuntu-latest"],"name":"os"},{"values":["main"],"name":"git_branch"},{"values":["experiment flow v5"],"name":"git_commit"},{"values":["Valerii-Synenko"],"name":"user_that_triggered"}]
+[{"values":["GitHub CI"],"name":"env"},{"values":["http://localhost/"],"name":"base_url"},{"values":["ubuntu-latest"],"name":"os"},{"values":["main"],"name":"git_branch"},{"values":["experiment flow v6"],"name":"git_commit"},{"values":["Valerii-Synenko"],"name":"user_that_triggered"}]

@@ -1,2 +1,2 @@
 "Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
-"passed","Wed Dec 31 23:43:11 UTC 2025","Wed Dec 31 23:43:11 UTC 2025","338","test","test_a","","","","test_register_user",""
+"passed","Wed Dec 31 23:49:25 UTC 2025","Wed Dec 31 23:49:25 UTC 2025","328","test","test_a","","","","test_register_user",""
