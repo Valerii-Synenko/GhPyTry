@@ -196,8 +196,7 @@ jobs:
           keep_files: false
           commit_message: "📊 Allure Report - Run #${{ github.run_number }}: ${{ github.event.head_commit.message }}"
 
-      - name: Add report link
-        if: always()
+      - name: Summary Link
         run: |
           echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
-          echo "https://<username>.github.io/<repo>/" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
