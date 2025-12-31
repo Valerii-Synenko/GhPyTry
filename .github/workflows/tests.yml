@@ -7,7 +7,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-run-name: "🚀 test run #${{ github.run_number }} -> ${{ github.event.head_commit.message }}"
+run-name: "🚀 test run #${{ github.run_number }}: ${{ github.event.head_commit.message }}"
 
 permissions:
   contents: write
@@ -47,23 +47,22 @@ jobs:
             exit 1
           fi
           
-          echo ""
           echo "⏳ Waiting for edge-router to accept connections..."
       
           for i in {1..30}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
       
             if [ "$STATUS" = "200" ]; then
-              echo "🟢edge-router is ready!"
+              echo "✅ edge-router is ready!"
               break
             fi
       
-            echo "   Attempt $i/30: edge-router not ready (status=$STATUS)"
+            echo "Attempt $i/30: edge-router not ready (status=$STATUS)"
             sleep 5
           done
       
           if [ "$STATUS" != "200" ]; then
-            echo "🔴edge-router did not become ready"
+            echo "❌ edge-router did not become ready"
             echo ""
             echo "Container status:"
             docker ps
@@ -148,7 +147,7 @@ jobs:
           sudo ln -s /opt/allure/bin/allure /usr/bin/allure
           allure --version
 
-      - name: Add Allure executor info
+      - name: Add Allure metadata
         run: |
           cat > allure-results/executor.json << EOF
           {
@@ -160,15 +159,13 @@ jobs:
             "reportUrl": "https://valerii-synenko.github.io/GhPyTry/"
           }
           EOF
-
-      - name: Add Allure environment info
-        run: |
+      
           cat > allure-results/environment.properties << EOF
           env=GitHub CI
           base_url=http://localhost/
           os=ubuntu-latest
           git_branch=${{ github.ref_name }}
-          git_commit=${{ github.sha }}
+          git_commit=${{ github.event.head_commit.message }}
           git_run_number=${{ github.run_number }}
           EOF
 
@@ -185,37 +182,10 @@ jobs:
           echo "📊 Generating Allure report..."
           allure generate allure-results -o allure-report --clean
 
-          echo "✅ Report generated successfully"
-
           if [ -d "allure-report/history" ]; then
-            echo "✅ History included in report"
+            echo "✅ Report generated successfully"
             ls -la allure-report/history/
           fi
-
-      - name: Add metadata to report
-        run: |
-          cat > allure-report/README.md << EOF
-          # 📊 Allure Test Report
-
-          **Generated**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          **Run Number**: #${{ github.run_number }}
-          **Commit**: \`${{ github.sha }}\`
-          **Branch**: \`${{ github.ref_name }}\`
-          **Triggered by**: ${{ github.actor }}
-
-          ---
-
-          [📋 View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
-
-          ## 📈 Navigate Report
-
-          - **Overview** - Summary of test results
-          - **Suites** - Tests organized by test suites
-          - **Graphs** - Trends and statistics
-          - **Timeline** - Test execution timeline
-          - **Behaviors** - Tests by features/stories
-          - **Packages** - Tests by package structure
-          EOF
 
       - name: Publish report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
@@ -224,7 +194,7 @@ jobs:
           publish_branch: gh-pages
           publish_dir: allure-report
           keep_files: false
-          commit_message: "📊 Allure Report - Run #${{ github.run_number }} - ${{ github.sha }}"
+          commit_message: "📊 Allure Report - Run #${{ github.run_number }}: ${{ github.event.head_commit.message }}"
 
       - name: Add report link
         run: |
