@@ -30,12 +30,12 @@ jobs:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
 
-      - name: Docker compose up microservices-demo
+      - name: Start and verify microservices
         run: |
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
       
-          echo "Wait containers to иbe initialize (10s)"
+          echo "⏳ Waiting for containers to initialize (10s)..."
           sleep 10
       
           CONTAINER_COUNT=$(docker ps -q | wc -l)
@@ -46,6 +46,36 @@ jobs:
             echo "❌ No containers running"
             exit 1
           fi
+          
+          echo ""
+          echo "⏳ Waiting for edge-router to accept connections..."
+      
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
+      
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ edge-router is ready!"
+              break
+            fi
+      
+            echo "   Attempt $i/30: edge-router not ready (status=$STATUS)"
+            sleep 5
+          done
+      
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ edge-router did not become ready"
+            echo ""
+            echo "Container status:"
+            docker ps
+            echo ""
+            echo "edge-router logs:"
+            docker logs edge-router --tail=50
+            exit 1
+          fi
+      
+          echo "⏳ Stabilizing services (30s)..."
+          sleep 30
+          echo "✅ All services ready!"
 
       - name: Wait for services to be ready
         run: |
