@@ -166,7 +166,7 @@ jobs:
           os=ubuntu-latest
           git_branch=${{ github.ref_name }}
           git_commit=${{ github.event.head_commit.message }}
-          git_run_number=${{ github.run_number }}
+          user_that_triggered=${{ github.actor }}
           EOF
 
       - name: Generate Allure Report (with history)
@@ -197,6 +197,7 @@ jobs:
           commit_message: "📊 Allure Report - Run #${{ github.run_number }}: ${{ github.event.head_commit.message }}"
 
       - name: Add report link
+        if: always()
         run: |
           echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
           echo "https://<username>.github.io/<repo>/" >> $GITHUB_STEP_SUMMARY
