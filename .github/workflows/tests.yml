@@ -17,7 +17,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
     env:
-      BASE_URL: http://localhost/8000
+      BASE_URL: http://localhost/
       FAKER_LOCALE: hr_HR
 
     steps:
@@ -39,8 +39,8 @@ jobs:
         run: |
           echo "Waiting for BASE_URL to respond..."
           timeout 120s bash -c '
-          until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/8000)" == "200" ]; do
-            echo "Still waiting for http://localhost/8000 to return 200 OK..."
+          until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)" == "200" ]; do
+            echo "Still waiting for http://localhost/ to return 200 OK..."
             sleep 5
           done'
           echo "🟢 Services are up and running! Current status:"
@@ -129,7 +129,7 @@ jobs:
         run: |
           cat > allure-results/environment.properties << EOF
           env=GitHub CI
-          base_url=http://localhost/8000
+          base_url=http://localhost/
           os=ubuntu-latest
           git_branch=${{ github.ref_name }}
           git_commit=${{ github.event.head_commit.message }}
