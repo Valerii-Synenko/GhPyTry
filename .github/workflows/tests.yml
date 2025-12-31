@@ -35,19 +35,28 @@ jobs:
           cd microservices-demo/deploy/docker-compose
           docker compose up -d
 
-      - name: Wait for services to be ready
+      - name: Wait for edge-router to be ready
         run: |
-          echo "Waiting for container to respond..."
-          timeout 120s bash -c '
-          until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)" == "200" ]; do
-            echo "Still waiting for http://localhost/ to return 200 OK..."
+          echo "Waiting for edge-router..."
+      
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
+      
+            if [ "$STATUS" = "200" ]; then
+              echo "🟢 edge-router is ready!"
+              break
+            fi
+      
+            echo "Attempt $i/30: edge-router not ready (status=$STATUS)"
             sleep 5
-          done'
-          echo "🟢 Services are up and running! Current status:"
-          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-          
-          echo "Waiting for services to be ready..."
-          sleep 60
+          done
+      
+          if [ "$STATUS" != "200" ]; then
+            echo "🔴 edge-router did not become ready"
+            docker ps
+            docker logs edge-router --tail=50
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
