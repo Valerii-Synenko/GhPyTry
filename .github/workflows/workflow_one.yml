@@ -9,5 +9,7 @@ jobs:
       - name: Display text
         run: echo "Some text"
 
-      - name: Check Python version
-        run: python –version
+      - name: Multiline command
+        run: |
+          node -v
+          npm -v
