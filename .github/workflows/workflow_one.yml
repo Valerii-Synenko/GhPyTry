@@ -8,3 +8,6 @@ jobs:
     steps:
       - name: Display text
         run: echo "Some text"
+
+      - name: Check Python version
+        run: python –version
