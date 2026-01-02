@@ -27,5 +27,5 @@ from faker import Faker
 
 
 def test_true():
-    bool_var_1 = True
-    assert bool_var_1
+    bool_var_2 = True
+    assert bool_var_2
