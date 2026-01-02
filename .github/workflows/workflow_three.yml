@@ -6,7 +6,8 @@ jobs:
   one_job:
     runs-on: ubuntu-latest
     steps:
-      - name: Get PWD
-        run: |
-          pwd
-          ls -a
+      - name: Get list files and do checkout
+        run: ls -a
+      - uses: actions/checkout@v5
+      - name: Get list files after checkot
+        run: ls -a
