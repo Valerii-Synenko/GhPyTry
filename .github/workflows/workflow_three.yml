@@ -9,7 +9,7 @@ jobs:
       - name: Get list files and do checkout
         run: |
           git init
-          git remote origin "https://@GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}github.com/GITHUB_REPOSITORY.git"
+          git remote add origin "https://@GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}github.com/GITHUB_REPOSITORY.git"
           git fetch origin
           git checkout main
 #        run: ls -a
