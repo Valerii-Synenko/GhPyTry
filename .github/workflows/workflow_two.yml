@@ -22,7 +22,7 @@ jobs:
 
   third_job:
     runs-on: windows-latest
-    needs: second_job
+    needs: [first_job, second_job]
     steps:
       - name: Get Node version
         run: node -v
