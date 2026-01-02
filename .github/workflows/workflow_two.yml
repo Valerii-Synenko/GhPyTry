@@ -3,7 +3,7 @@ name: Second Workflow
 on: [push, workflow_dispatch]
 
 jobs:
-  firs_job:
+  first_job:
     runs-on: ubuntu-latest
     steps:
       - name: Display text
