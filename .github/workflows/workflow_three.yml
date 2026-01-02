@@ -1,0 +1,12 @@
+name: workflow_three.yml
+
+on: [push, workflow_dispatch]
+
+jobs:
+  one_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get PWD
+        run: |
+          pwd
+          ls -a
