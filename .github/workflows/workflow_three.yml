@@ -7,7 +7,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Get list files and do checkout
-        run: ls -a
-      - uses: actions/checkout@v5
+        run: |
+          git init
+          git remote and origin "https://@GITHUB_ACTOR:${{ secrets.GITHUB_TOKEN }}github.com/GITHUB_REPOSITORY.git"
+          git fetch origin
+          git checkout main
+#        run: ls -a
+#      - uses: actions/checkout@v5
       - name: Get list files after checkot
         run: ls -a
