@@ -1,7 +1,7 @@
 name: workflow_four.yml
 on:
   workflow_run:
-    workflows: [First Workflow, Second Workflow, workflow_three]
+    workflows: [Second Workflow]
     types:
       - completed
 

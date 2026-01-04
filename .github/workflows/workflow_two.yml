@@ -18,7 +18,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Get Node version
-        run: node -v
+        run: node -v(qweqwe)
 
   third_job:
     runs-on: windows-latest
