@@ -1,6 +1,19 @@
 name: Second Workflow
 
-on: [push, workflow_dispatch, pull_request]
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
 
 jobs:
   first_job:
