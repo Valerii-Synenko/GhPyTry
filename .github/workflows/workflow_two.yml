@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: Select an required environment
+        description: Select environment
         type: choice
         required: true
         options:
