@@ -1,4 +1,4 @@
-name: Second Workflow
+name: Workflow Two
 
 on:
   pull_request:
@@ -14,6 +14,16 @@ on:
       - main
 
   workflow_dispatch:
+    inputs:
+      env:
+        description: Select an required environment
+        type: choice
+        required: true
+        options:
+          - dev
+          - qa
+          - prod
+        default: "dev"
 
 jobs:
   first_job:
