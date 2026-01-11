@@ -36,23 +36,5 @@ jobs:
         run: |
           node -v
           npm -v
-
-  second_job:
-    runs-on: macos-latest
-    steps:
-      - name: Get Node version
-        run: node -v
-
-  third_job:
-    runs-on: windows-latest
-    needs: [first_job, second_job]
-    steps:
-      - name: Get Node version
-        run: node -v
-
-  fourth_job:
-    runs-on: windows-latest
-    needs: [first_job]
-    steps:
-      - name: Get Node version
-        run: node -v
+          echo '${{ toJSON(github) }}'
+          echo '${{ toJSON(github.ref) }}'
