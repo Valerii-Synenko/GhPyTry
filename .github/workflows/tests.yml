@@ -166,9 +166,9 @@ jobs:
           EOF
 
           cat > allure-results/environment.properties << EOF
-          ENV=GitHub CI
+          ENV=${{ inputs.env || 'dev' }}
           OS=ubuntu-latest
-          URL=http://localhost/
+          URL=${{ vars.BASE_URL }}
           BRANCH=${{ github.ref_name }}
           COMMIT=${{ github.event.head_commit.message }}
           TRIGGERED=@${{ github.actor }}
