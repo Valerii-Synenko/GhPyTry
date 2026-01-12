@@ -38,7 +38,7 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-#    timeout-minutes: 10
+    timeout-minutes: 10
     environment: ${{ inputs.env || 'dev' }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
