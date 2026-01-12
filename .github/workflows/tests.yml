@@ -20,9 +20,9 @@ on:
         type: choice
         required: true
         options:
-          - DEV
-          - QA
-        default: DEV
+          - dev
+          - qa
+        default: dev
 
 # Uncomment schedule event if it needs you.
 # By default, it set for running every day at 4:00 AM.
@@ -39,7 +39,7 @@ jobs:
     name: Run Tests
     runs-on: ubuntu-latest
 #    timeout-minutes: 10
-    environment: ${{ inputs.env || 'DEV' }}
+    environment: ${{ inputs.env || 'dev' }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
       FAKER_LOCALE: ${{ vars.FAKER_LOCALE }}
