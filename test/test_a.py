@@ -28,4 +28,4 @@ from faker import Faker
 
 def test_true():
     with allure.step("Assert True"):
-        assert True
+        assert False
