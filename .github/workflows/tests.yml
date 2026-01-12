@@ -127,38 +127,15 @@ jobs:
     if: always()
 
     steps:
-      - name: Checkout test-framework repository
-        uses: actions/checkout@v6
-
-      - name: Download Allure results
-        uses: actions/download-artifact@v7
-        with:
-          name: allure-results
-          path: allure-results
-
-      - name: Checkout gh-pages branch for history
-        uses: actions/checkout@v6
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Generate and publish Allure report
+      - name: Test marketplace action
         uses: simple-elf/allure-report-action@v1.13
+        if: always()
+        id: allure-report
         with:
-          allure_results: allure-results
+          allure_results: build/allure-results
+          gh_pages: gh-pages
           allure_report: allure-report
           allure_history: allure-history
-          gh_pages: gh-pages
-          keep_reports: 20
-          github_run_num: ${{ github.run_number }}
-          github_run_id: ${{ github.run_id }}
-          github_repo: ${{ github.repository }}
-          github_repo_owner: ${{ github.repository_owner }}
-          github_tests_repo: ${{ github.repository }}
-          github_server_url: https://github.com
-          report_url: https://valerii-synenko.github.io/GhPyTry/allure-report/
-          report_name: "Allure Report"
 
       - name: Summary Link
         run: |
