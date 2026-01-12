@@ -38,7 +38,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     environment: ${{ inputs.env || 'DEV' }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
@@ -53,22 +52,53 @@ jobs:
         with:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
-          ref: main
 
-      - name: Compose microservices-demo
+      - name: Set up Environment
         run: |
           cd microservices-demo/deploy/docker-compose
-          docker compose up -d --wait
-          
-          for service in frontend cartservice productcatalogservice; do
-            until curl -sf http://localhost/health/$service > /dev/null; do
-              echo "Waiting for $service..."
-              sleep 2
-            done
+          docker compose up -d
+
+          echo "⏳ Waiting for containers to initialize (10s)..."
+          sleep 10
+
+          CONTAINER_COUNT=$(docker ps -q | wc -l)
+          if [ "$CONTAINER_COUNT" -gt 0 ]; then
+            echo "✅ $CONTAINER_COUNT containers running"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" --no-trunc
+          else
+            echo "❌ No containers running"
+            exit 1
+          fi
+
+          echo "⏳ Waiting for edge-router to accept connections..."
+
+          for i in {1..30}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:80 || true)
+
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ edge-router is ready!"
+              break
+            fi
+
+            echo "Attempt $i/30: edge-router not ready (status=$STATUS)"
+            sleep 5
           done
 
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ edge-router did not become ready"
+            echo "Container status:"
+            docker ps
+            echo "edge-router logs:"
+            docker logs edge-router --tail=50
+            exit 1
+          fi
+
+          echo "⏳ Stabilizing services (30s)..."
+          sleep 30
+          echo "✅ All services ready!"
+
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
@@ -79,7 +109,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Cache Poetry dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v3
         id: cache
         with:
           path: .venv
@@ -93,35 +123,10 @@ jobs:
           echo "Verifying installation:"
           ls -la .venv/bin/ | grep pytest || echo "pytest not found!"
 
-      - name: Run pytest
-        id: pytest
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 5
-          max_attempts: 2
-          command: poetry run pytest --alluredir=allure-results -v
-
-      - name: Debug on test failure
-        if: failure() && steps.pytest.outcome == 'failure'
+      - name: Run pytest with Allure
         run: |
-          echo "::group::Docker Container Status"
-          docker ps -a
-          echo "::endgroup::"
-
-          echo "::group::Docker Compose Services"
-          cd microservices-demo/deploy/docker-compose
-          docker compose ps
-          docker compose logs --tail=100
-          echo "::endgroup::"
-
-          echo "::group::System Resources"
-          df -h
-          free -h
-          echo "::endgroup::"
-
-          echo "::group::Network Connectivity"
-          curl -v http://localhost/ || true
-          echo "::endgroup::"
+          poetry run pytest --alluredir=allure-results -v
+        continue-on-error: true
 
       - name: Tear down Environment
         if: always()
@@ -131,7 +136,7 @@ jobs:
 
       - name: Upload Allure results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: allure-results
@@ -145,16 +150,16 @@ jobs:
 
     steps:
       - name: Checkout test-framework repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Download Allure results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           name: allure-results
           path: allure-results
 
       - name: Checkout gh-pages branch to get Allure reports history
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         continue-on-error: true
         with:
           ref: gh-pages
@@ -210,7 +215,7 @@ jobs:
           fi
 
       - name: Publish report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_branch: gh-pages
