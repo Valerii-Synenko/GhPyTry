@@ -46,10 +46,10 @@ jobs:
 
     steps:
       - name: Checkout test-framework
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Checkout microservices-demo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
