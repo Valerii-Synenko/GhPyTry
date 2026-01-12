@@ -52,7 +52,6 @@ jobs:
         with:
           repository: Valerii-Synenko/microservices-demo
           path: microservices-demo
-          ref: main
 
       - name: Set up Environment
         run: |
