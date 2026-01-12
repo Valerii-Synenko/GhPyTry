@@ -157,7 +157,7 @@ jobs:
           github_repo_owner: ${{ github.repository_owner }}
           github_tests_repo: ${{ github.repository }}
           github_server_url: https://github.com
-          report_url: https://valerii-synenko.github.io/GhPyTry/
+          report_url: https://valerii-synenko.github.io/GhPyTry/allure-report/
           report_name: "Allure Report"
 
       - name: Summary Link
