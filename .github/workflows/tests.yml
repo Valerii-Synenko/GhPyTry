@@ -136,6 +136,17 @@ jobs:
           name: allure-results
           path: allure-results
 
+      - name: Add environment metadata
+        run: |
+          cat > allure-results/environment.properties << EOF
+          ENV=${{ inputs.env || 'dev' }}
+          OS=ubuntu-latest
+          URL=${{ vars.BASE_URL }}
+          BRANCH=${{ github.ref_name }}
+          COMMIT=${{ github.event.head_commit.message }}
+          TRIGGERED=@${{ github.actor }}
+          EOF
+
       - name: Get Allure history
         uses: actions/checkout@v6
         if: always()
@@ -163,9 +174,5 @@ jobs:
       - name: Add Report Link to Summary
         if: always()
         run: |
-          REPORT_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           echo "## 📊 Allure Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🔗 [View Latest Report]($REPORT_URL)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Run #${{ github.run_number }}** | Triggered by @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> $GITHUB_STEP_SUMMARY
