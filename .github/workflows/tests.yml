@@ -24,6 +24,17 @@ on:
           - qa
         default: dev
 
+      os:
+        description: Select OS
+        type: choice
+        required: true
+        options:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        default: ubuntu-latest
+
+
 # Uncomment schedule event if it needs you.
 # By default, it set for running every day at 4:00 AM.
 #  schedule:
@@ -37,7 +48,7 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.os || 'ubuntu-latest' }}
     timeout-minutes: 10
     environment: ${{ inputs.env || 'dev' }}
     env:
@@ -61,7 +72,7 @@ jobs:
           
           echo "⏳ Waiting for application on port $PORT..."
           for i in {1..30}; do
-            if curl -sf http://localhost:80/ > /dev/null 2>&1; then
+            if curl -sf ${{ vars.BASE_URL }}:80/ > /dev/null 2>&1; then 
               echo "✅ Application ready!"
               exit 0
             fi
@@ -101,7 +112,7 @@ jobs:
           echo "Verifying installation:"
           ls -la .venv/bin/ | grep pytest || echo "pytest not found!"
 
-      - name: Run pytest with Allure
+      - name: Run pytest
         run: |
           poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
@@ -140,8 +151,7 @@ jobs:
         run: |
           cat > allure-results/environment.properties << EOF
           ENV=${{ inputs.env || 'dev' }}
-          OS=ubuntu-latest
-          URL=${{ vars.BASE_URL }}
+          OS=${{ inputs.os || 'ubuntu-latest' }}
           BRANCH=${{ github.ref_name }}
           COMMIT=${{ github.event.head_commit.message }}
           TRIGGERED=@${{ github.actor }}
@@ -161,7 +171,7 @@ jobs:
         with:
           allure_results: allure-results
           allure_history: allure-history
-          keep_reports: 20
+          keep_reports: 10
 
       - name: Deploy report to Github Pages
         if: always()
