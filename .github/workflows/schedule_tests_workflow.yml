@@ -10,4 +10,4 @@ jobs:
     name: Trigger Main Workflow
     uses: ./.github/workflows/tests.yml
     with:
-      env: qa
+      env: dev
