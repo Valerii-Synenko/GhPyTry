@@ -1,0 +1,8 @@
+name: Schedule test run
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+
+
+jobs:
