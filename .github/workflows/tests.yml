@@ -24,13 +24,23 @@ on:
           - qa
         default: dev
 
-  workflow_call:
-    inputs:
-      env:
-        type: string
-        default: dev
+      os:
+        description: Select OS
+        type: choice
+        required: true
+        options:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        default: ubuntu-latest
 
-run-name: "🚀 test run #${{ github.run_number }} |  ${{ github.event.head_commit.message }}"
+
+# Uncomment schedule event if it needs you.
+# By default, it set for running every day at 4:00 AM.
+#  schedule:
+#    - "0 4 * * *"
+
+run-name: "🚀 (test run #${{ github.run_number }})  ${{ github.event.head_commit.message }}"
 
 permissions:
   contents: write
@@ -38,8 +48,9 @@ permissions:
 jobs:
   test:
     name: Run Tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.os || 'ubuntu-latest' }}
     timeout-minutes: 10
+    environment: ${{ inputs.env || 'dev' }}
     env:
       BASE_URL: ${{ vars.BASE_URL }}
       FAKER_LOCALE: ${{ vars.FAKER_LOCALE }}
