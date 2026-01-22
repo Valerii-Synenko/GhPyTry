@@ -1,1 +1,0 @@
-{"d42e624fc88c30356f7493f7e1b57bc9":{"statistic":{"failed":1,"broken":0,"skipped":0,"passed":0,"unknown":0,"total":1},"items":[{"uid":"2736c840e3b071b5","reportUrl":"https://Valerii-Synenko.github.io/GhPyTry/122/#testresult/2736c840e3b071b5","status":"failed","statusDetails":"AssertionError: assert False","time":{"start":1768262012933,"stop":1768262012934,"duration":1}}]}}
