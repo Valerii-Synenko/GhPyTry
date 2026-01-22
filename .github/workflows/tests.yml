@@ -86,35 +86,24 @@ jobs:
           exit 1
           
 
-      - name: Install Python
-        uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
+          cache: 'pip'
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
+      - uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
-      - name: Cache Poetry dependencies
-        uses: actions/cache@v5
-        id: cache
+      - uses: actions/cache@v5
         with:
           path: .venv
-          key: venv-${{ runner.os }}-py3.13-${{ hashFiles('**/poetry.lock') }}
-          restore-keys: |
-            venv-${{ runner.os }}-py3.13-
+          key: venv-${{ runner.os }}-py3.13-${{ hashFiles('poetry.lock') }}
 
-      - name: Install dependencies
-        run: |
-          poetry install --no-interaction --no-root
-          echo "Verifying installation:"
-          ls -la .venv/bin/ | grep pytest || echo "pytest not found!"
+      - run: poetry install --no-interaction --no-root
 
-      - name: Run pytest
-        run: |
-          poetry run pytest --alluredir=allure-results -v
+      - run: poetry run pytest --alluredir=allure-results -v
         continue-on-error: true
 
       - name: Tear down Environment
