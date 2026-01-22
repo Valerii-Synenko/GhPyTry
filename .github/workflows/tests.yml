@@ -85,11 +85,9 @@ jobs:
           docker compose logs --tail=50
           exit 1
           
-
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-          cache: 'pip'
 
       - uses: snok/install-poetry@v1
         with:
@@ -102,23 +100,7 @@ jobs:
           key: venv-${{ runner.os }}-py3.13-${{ hashFiles('poetry.lock') }}
 
       - run: poetry install --no-interaction --no-root
-
       - run: poetry run pytest --alluredir=allure-results -v
-        continue-on-error: true
-
-      - name: Tear down Environment
-        if: always()
-        run: |
-          cd microservices-demo/deploy/docker-compose
-          docker compose down -v
-
-      - name: Upload Allure results
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: allure-results
-          path: allure-results
-          retention-days: 1
 
   report:
     name: Generate and Publish Report

@@ -26,6 +26,6 @@ def test_register_user():
         assert response.status_code == 200, f"{response.url}\n{response.text}"
 
 
-def test_true():
-    with allure.step("Assert True"):
-        assert False
+# def test_true():
+#     with allure.step("Assert True"):
+#         assert False
