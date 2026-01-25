@@ -59,32 +59,11 @@ jobs:
       - name: Checkout test-framework
         uses: actions/checkout@v6
 
-      - name: Checkout microservices-demo
-        uses: actions/checkout@v6
+      - name: Install microservices-demo
+        uses: ./.github/actions/install-microservices-demo
         with:
-          repository: Valerii-Synenko/microservices-demo
-          path: microservices-demo
+          health_check_url: ${{ vars.BASE_URL }}
 
-      - name: Start microservices
-        working-directory: microservices-demo/deploy/docker-compose
-        run: |
-          docker compose up -d --wait
-          
-          echo "⏳ Waiting for application on port $PORT..."
-          for i in {1..30}; do
-            if curl -sf ${{ vars.BASE_URL }}:80/ > /dev/null 2>&1; then 
-              echo "✅ Application ready!"
-              exit 0
-            fi
-            echo "Attempt $i/30..."
-            sleep 2
-          done
-          
-          echo "❌ Application failed to start"
-          docker compose ps
-          docker compose logs --tail=50
-          exit 1
-          
       - uses: actions/setup-python@v6
         with:
           python-version: '3.13'

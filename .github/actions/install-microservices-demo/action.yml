@@ -1,0 +1,37 @@
+name: Deploy microservices-demo app
+description: Deploy microservices-demo application using docker compose
+
+inputs:
+  health_check_url:
+    description: The URL to check service readiness
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout install-microservices-demo
+      uses: actions/checkout@v6
+      with:
+        repository: Valerii-Synenko/install-microservices-demo
+        path: install-microservices-demo
+
+    - name: Start microservices
+      shell: bash
+      working-directory: install-microservices-demo/deploy/docker-compose
+      run: |
+        docker compose up -d --wait
+
+        echo "⏳ Waiting for application at ${{ inputs.health_check_url }}:80 ..."
+        for i in {1..30}; do
+          if curl -sf ${{ inputs.health_check_url }}:80/ > /dev/null 2>&1; then
+            echo "✅ Application ready!"
+            exit 0
+          fi
+          echo "Attempt $i/30..."
+          sleep 2
+        done
+
+        echo "❌ Application failed to start"
+        docker compose ps
+        docker compose logs --tail=50
+        exit 1
